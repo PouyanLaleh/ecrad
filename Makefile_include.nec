@@ -1,0 +1,24 @@
+# This is a Makefile for the Intel compiler on ECMWF's Atos
+# supercomputer: run "make PROFILE=intel_atos". Note that by default
+# the Intel compiler puts arrays on the stack, which is likely to
+# cause a stack overflow - hence the use of "-heap-arrays" which puts
+# them on the heap like most other compilers.  If you remove this
+# argument you will likely need to set the environment variable
+# OMP_STACKSIZE to 64MB.
+
+FC = nfort
+CC = ncc
+CPPFLAGS = 
+
+ifndef DEBUG
+OPTFLAGS = -O3
+else
+OPTFLAGS = -O0 -check bounds -init=snan
+endif
+
+LDFLAGS = -lrt
+#WARNFLAGS = -warn all
+BASICFLAGS = -module ../mod  -D__NEC__  -report-all -fdiag-vector=3 -finline-functions #-floop-unroll-complete=8 #-ftrace
+
+DEBUGFLAGS = -g # -traceback=verbose
+OMPFLAG = -fopenmp 
