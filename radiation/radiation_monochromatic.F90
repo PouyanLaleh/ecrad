@@ -343,6 +343,7 @@ contains
     real(jprb), dimension(config%n_g_sw,nlev,istartcol:iendcol), intent(inout) &
          &  :: od_sw, ssa_sw
     real(jprb), dimension(config%n_g_sw,nlev,istartcol:iendcol), intent(out) :: g_sw
+     print *, "********************************************"
 
     g_sw(:,:,istartcol:iendcol) = 0.0_jprb
 

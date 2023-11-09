@@ -152,9 +152,9 @@ contains
           else
             ! Non-scattering case: use simpler functions for
             ! transmission and emission
-            call calc_no_scattering_transmittance_lw(ng, od(:,jlev,jcol), &
-                 &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1, jcol), &
-                 &  transmittance(:,jlev), source_up(:,jlev), source_dn(:,jlev))          
+            !!call calc_no_scattering_transmittance_lw(ng, od(:,jlev,jcol), &
+             !!    &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1, jcol), &
+             !!    &  transmittance(:,jlev), source_up(:,jlev), source_dn(:,jlev))          
             ! Ensure that clear-sky reflectance is zero since it may be
             ! used in cloudy-sky case
             reflectance(:,jlev) = 0.0_jprb
@@ -164,20 +164,20 @@ contains
       end do
 
       if (config%do_clear) then
-        if (config%do_lw_aerosol_scattering) then
+        !!if (config%do_lw_aerosol_scattering) then
           ! Then use adding method to compute fluxes
-          call adding_ica_lw(ng, nlev, &
-               &  reflectance, transmittance, source_up, source_dn, &
-               &  emission(:,jcol), albedo(:,jcol), &
-               &  flux_up, flux_dn)
-        else
+         !! call adding_ica_lw(ng, nlev, &
+         !!      &  reflectance, transmittance, source_up, source_dn, &
+         !!      &  emission(:,jcol), albedo(:,jcol), &
+         !!      &  flux_up, flux_dn)
+      !!  else
           ! Simpler down-then-up method to compute fluxes
-          call calc_fluxes_no_scattering_lw(ng, nlev, &
-               &  transmittance, source_up, source_dn, &
-               &  emission(:,jcol), albedo(:,jcol), &
-               &  flux_up, flux_dn)
+        !!  call calc_fluxes_no_scattering_lw(ng, nlev, &
+          !!     &  transmittance, source_up, source_dn, &
+         !!      &  emission(:,jcol), albedo(:,jcol), &
+        !!       &  flux_up, flux_dn)
           
-        end if
+       !! end if
 
         ! Sum over g-points to compute broadband fluxes
         flux%lw_up_clear(jcol,:) = sum(flux_up,1)
@@ -248,27 +248,27 @@ contains
                    &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1,jcol), &
                    &  reflectance(:,jlev), transmittance(:,jlev), &
                    &  source_up(:,jlev), source_dn(:,jlev))
-            else
+           !! else
               ! No-scattering case: use simpler functions for
               ! transmission and emission
-              call calc_no_scattering_transmittance_lw(ng, od_total, &
-                   &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1, jcol), &
-                   &  transmittance(:,jlev), source_up(:,jlev), source_dn(:,jlev))
+              !!call calc_no_scattering_transmittance_lw(ng, od_total, &
+              !!     &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1, jcol), &
+              !!     &  transmittance(:,jlev), source_up(:,jlev), source_dn(:,jlev))
             end if
           end if ! is cloudy layer
         end do
         
-        if (config%do_lw_cloud_scattering) then
+       !! if (config%do_lw_cloud_scattering) then
           ! Use adding method to compute fluxes for an overcast sky
-          call adding_ica_lw(ng, nlev, reflectance, transmittance, source_up, source_dn, &
-               &  emission(:,jcol), albedo(:,jcol), &
-               &  flux_up, flux_dn)
-        else
+       !!   call adding_ica_lw(ng, nlev, reflectance, transmittance, source_up, source_dn, &
+       !!        &  emission(:,jcol), albedo(:,jcol), &
+       !!       &  flux_up, flux_dn)
+       !! else
           ! Simpler down-then-up method to compute fluxes
-          call calc_fluxes_no_scattering_lw(ng, nlev, &
-               &  transmittance, source_up, source_dn, emission(:,jcol), albedo(:,jcol), &
-               &  flux_up, flux_dn)
-        end if
+       !!   call calc_fluxes_no_scattering_lw(ng, nlev, &
+       !!        &  transmittance, source_up, source_dn, emission(:,jcol), albedo(:,jcol), &
+       !!        &  flux_up, flux_dn)
+       !! end if
         
         ! Store overcast broadband fluxes
         flux%lw_up(jcol,:) = sum(flux_up,1)
@@ -302,11 +302,11 @@ contains
       ! (2015) approximate radiation update scheme, using clear-sky
       ! transmittance if no clouds were present in the profile,
       ! all-sky transmittance otherwise
-      if (config%do_lw_derivatives) then
-        call calc_lw_derivatives_ica(ng, nlev, jcol, transmittance, flux_up(:,nlev+1), &
-             &                       flux%lw_derivatives)
+     !! if (config%do_lw_derivatives) then
+     !!   call calc_lw_derivatives_ica(ng, nlev, jcol, transmittance, flux_up(:,nlev+1), &
+     !!        &                       flux%lw_derivatives)
  
-      end if
+    !!  end if
 
     end do
 

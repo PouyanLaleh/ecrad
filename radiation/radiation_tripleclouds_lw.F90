@@ -229,34 +229,34 @@ contains
       ! Section 3: Clear-sky calculation
       ! --------------------------------------------------------
 
-      if (.not. config%do_lw_aerosol_scattering) then
+     !! if (.not. config%do_lw_aerosol_scattering) then
         ! No scattering in clear-sky flux calculation; note that here
         ! the first two dimensions of the input arrays are unpacked
         ! into vectors inside the routine        
-        call calc_no_scattering_transmittance_lw(ng*nlev, od(:,:,jcol), &
-             &  planck_hl(:,1:nlev,jcol), planck_hl(:,2:nlev+1, jcol), &
-             &  trans_clear, source_up_clear, source_dn_clear)
+     !!   call calc_no_scattering_transmittance_lw(ng*nlev, od(:,:,jcol), &
+    !!         &  planck_hl(:,1:nlev,jcol), planck_hl(:,2:nlev+1, jcol), &
+    !!         &  trans_clear, source_up_clear, source_dn_clear)
         ! Ensure that clear-sky reflectance is zero since it may be
         ! used in cloudy-sky case
-        ref_clear = 0.0_jprb
+    !!    ref_clear = 0.0_jprb
         ! Simple down-then-up method to compute fluxes
-        call calc_fluxes_no_scattering_lw(ng, nlev, &
-             &  trans_clear, source_up_clear, source_dn_clear, &
-             &  emission(:,jcol), albedo(:,jcol), &
-             &  flux_up_clear, flux_dn_clear)
-      else
+    !!    call calc_fluxes_no_scattering_lw(ng, nlev, &
+    !!         &  trans_clear, source_up_clear, source_dn_clear, &
+    !!         &  emission(:,jcol), albedo(:,jcol), &
+    !!         &  flux_up_clear, flux_dn_clear)
+    !!  else
         ! Scattering in clear-sky flux calculation
-        call calc_ref_trans_lw(ng*nlev, &
-             &  od(:,:,jcol), ssa(:,:,jcol), g(:,:,jcol), &
-             &  planck_hl(:,1:nlev,jcol), planck_hl(:,2:nlev+1,jcol), &
-             &  ref_clear, trans_clear, &
-             &  source_up_clear, source_dn_clear)
+    !!    call calc_ref_trans_lw(ng*nlev, &
+    !!         &  od(:,:,jcol), ssa(:,:,jcol), g(:,:,jcol), &
+    !!         &  planck_hl(:,1:jlev,jcol), planck_hl(:,2:jlev+1,jcol), &
+    !!         &  ref_clear, trans_clear, &
+    !!         &  source_up_clear, source_dn_clear)
         ! Use adding method to compute fluxes
-        call adding_ica_lw(ng, nlev, &
-             &  ref_clear, trans_clear, source_up_clear, source_dn_clear, &
-             &  emission(:,jcol), albedo(:,jcol), &
-             &  flux_up_clear, flux_dn_clear)
-      end if
+    !!    call adding_ica_lw(ng, nlev, &
+    !!         &  ref_clear, trans_clear, source_up_clear, source_dn_clear, &
+    !!         &  emission(:,jcol), albedo(:,jcol), &
+    !!         &  flux_up_clear, flux_dn_clear)
+    !!  end if
 
       if (config%do_clear) then
         ! Sum over g-points to compute broadband fluxes
@@ -342,17 +342,17 @@ contains
                        &     *  od_cloud_new / (ssa_total*od_total)
                 end where
               end if
-              call calc_ref_trans_lw(ng, &
-                   &  od_total, ssa_total, g_total, &
-                   &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1,jcol), &
-                   &  reflectance(:,jreg,jlev), transmittance(:,jreg,jlev), &
-                   &  source_up(:,jreg,jlev), source_dn(:,jreg,jlev))
+              !!call calc_ref_trans_lw(ng, &
+              !!     &  od_total, ssa_total, g_total, &
+              !!     &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1,jcol), &
+              !!     &  reflectance(:,jreg,jlev), transmittance(:,jreg,jlev), &
+              !!     &  source_up(:,jreg,jlev), source_dn(:,jreg,jlev))
             else
               ! No-scattering case: use simpler functions for
               ! transmission and emission
-              call calc_no_scattering_transmittance_lw(ng, od_total, &
-                   &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1, jcol), &
-                   &  transmittance(:,jreg,jlev), source_up(:,jreg,jlev), source_dn(:,jreg,jlev))
+              !!call calc_no_scattering_transmittance_lw(ng, od_total, &
+              !!     &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1, jcol), &
+              !!     &  transmittance(:,jreg,jlev), source_up(:,jreg,jlev), source_dn(:,jreg,jlev))
               reflectance(:,jreg,jlev) = 0.0_jprb
             end if
           end do

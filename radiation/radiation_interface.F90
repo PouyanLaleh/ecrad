@@ -247,8 +247,8 @@ contains
     ! gases and aerosols at each longwave g-point, where the latter
     ! two variables are only defined if aerosol longwave scattering is
     ! enabled (otherwise both are treated as zero).
-    real(jprb), dimension(config%n_g_lw,nlev,istartcol:iendcol) :: od_lw
-    real(jprb), dimension(config%n_g_lw_if_scattering,nlev,istartcol:iendcol) :: &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw,nlev) :: od_lw
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw_if_scattering,nlev) :: &
          &  ssa_lw, g_lw
 
     ! Layer in-cloud optical depth, single scattering albedo and
@@ -256,39 +256,39 @@ contains
     ! the latter two variables are only defined if hydrometeor
     ! longwave scattering is enabled (otherwise both are treated as
     ! zero).
-    real(jprb), dimension(config%n_bands_lw,nlev,istartcol:iendcol) :: od_lw_cloud
-    real(jprb), dimension(config%n_bands_lw_if_scattering,nlev,istartcol:iendcol) :: &
+    real(jprb), dimension(istartcol:iendcol,config%n_bands_lw,nlev) :: od_lw_cloud
+    real(jprb), dimension(istartcol:iendcol,config%n_bands_lw_if_scattering,nlev) :: &
          &  ssa_lw_cloud, g_lw_cloud
 
     ! Layer optical depth, single scattering albedo and asymmetry factor of
     ! gases and aerosols at each shortwave g-point
-    real(jprb), dimension(config%n_g_sw,nlev,istartcol:iendcol) :: od_sw, ssa_sw, g_sw
+    real(jprb), dimension(istartcol:iendcol,config%n_g_sw,nlev) :: od_sw, ssa_sw, g_sw
 
     ! Layer in-cloud optical depth, single scattering albedo and
     ! asymmetry factor of hydrometeors in each shortwave band
-    real(jprb), dimension(config%n_bands_sw,nlev,istartcol:iendcol)   :: &
+    real(jprb), dimension(istartcol:iendcol,config%n_bands_sw,nlev)   :: &
          &  od_sw_cloud, ssa_sw_cloud, g_sw_cloud
 
     ! The Planck function (emitted flux from a black body) at half
     ! levels
-    real(jprb), dimension(config%n_g_lw,nlev+1,istartcol:iendcol) :: planck_hl
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw,nlev+1) :: planck_hl
 
     ! The longwave emission from and albedo of the surface in each
     ! longwave g-point; note that these are weighted averages of the
     ! values from individual tiles
-    real(jprb), dimension(config%n_g_lw, istartcol:iendcol) :: lw_emission
-    real(jprb), dimension(config%n_g_lw, istartcol:iendcol) :: lw_albedo
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw) :: lw_emission
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw) :: lw_albedo
 
     ! Direct and diffuse shortwave surface albedo in each shortwave
     ! g-point; note that these are weighted averages of the values
     ! from individual tiles
-    real(jprb), dimension(config%n_g_sw, istartcol:iendcol) :: sw_albedo_direct
-    real(jprb), dimension(config%n_g_sw, istartcol:iendcol) :: sw_albedo_diffuse
+    real(jprb), dimension(istartcol:iendcol, config%n_g_sw) :: sw_albedo_direct
+    real(jprb), dimension(istartcol:iendcol, config%n_g_sw) :: sw_albedo_diffuse
 
     ! The incoming shortwave flux into a plane perpendicular to the
     ! incoming radiation at top-of-atmosphere in each of the shortwave
     ! g-points
-    real(jprb), dimension(config%n_g_sw,istartcol:iendcol) :: incoming_sw
+    real(jprb), dimension(istartcol:iendcol,config%n_g_sw) :: incoming_sw
 
     character(len=100) :: rad_prop_file_name
     character(*), parameter :: rad_prop_base_file_name = "radiative_properties"
@@ -314,29 +314,29 @@ contains
       call single_level%get_albedos(istartcol, iendcol, config, &
            &                        sw_albedo_direct, sw_albedo_diffuse, &
            &                        lw_albedo)
-
+       
       ! Compute gas absorption optical depth in shortwave and
       ! longwave, shortwave single scattering albedo (i.e. fraction of
       ! extinction due to Rayleigh scattering), Planck functions and
       ! incoming shortwave flux at each g-point, for the specified
       ! range of atmospheric columns
-      if (config%i_gas_model == IGasModelMonochromatic) then
-        call gas_optics_mono(ncol,nlev,istartcol,iendcol, config, &
-             &  single_level, thermodynamics, gas, lw_albedo, &
-             &  od_lw, od_sw, ssa_sw, &
-             &  planck_hl, lw_emission, incoming_sw)
-      else if (config%i_gas_model == IGasModelIFSRRTMG) then
+      !!if (config%i_gas_model == IGasModelMonochromatic) then
+      !!  call gas_optics_mono(ncol,nlev,istartcol,iendcol, config, &
+      !!       &  single_level, thermodynamics, gas, lw_albedo, &
+      !!       &  od_lw, od_sw, ssa_sw, &
+      !!       &  planck_hl, lw_emission, incoming_sw)
+      if (config%i_gas_model == IGasModelIFSRRTMG) then
         call gas_optics_rrtmg(ncol,nlev,istartcol,iendcol, config, &
              &  single_level, thermodynamics, gas, &
              &  od_lw, od_sw, ssa_sw, lw_albedo=lw_albedo, &
              &  planck_hl=planck_hl, lw_emission=lw_emission, &
              &  incoming_sw=incoming_sw)
-      else
-        call gas_optics_ecckd(ncol,nlev,istartcol,iendcol, config, &
-             &  single_level, thermodynamics, gas, &
-             &  od_lw, od_sw, ssa_sw, lw_albedo=lw_albedo, &
-             &  planck_hl=planck_hl, lw_emission=lw_emission, &
-             &  incoming_sw=incoming_sw)
+     !! else
+     !!   call gas_optics_ecckd(ncol,nlev,istartcol,iendcol, config, &
+     !!        &  single_level, thermodynamics, gas, &
+     !!        &  od_lw, od_sw, ssa_sw, lw_albedo=lw_albedo, &
+     !!        &  planck_hl=planck_hl, lw_emission=lw_emission, &
+     !!       &  incoming_sw=incoming_sw)
       end if
 
       if (config%do_clouds) then
@@ -350,15 +350,15 @@ contains
         ! Compute hydrometeor absorption/scattering properties in each
         ! shortwave and longwave band
         if (config%i_gas_model == IGasModelMonochromatic) then
-          call cloud_optics_mono(nlev, istartcol, iendcol, &
-               &  config, thermodynamics, cloud, &
-               &  od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
-               &  od_sw_cloud, ssa_sw_cloud, g_sw_cloud)
-        elseif (config%use_general_cloud_optics) then
-          call general_cloud_optics(nlev, istartcol, iendcol, &
-               &  config, thermodynamics, cloud, & 
-               &  od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
-               &  od_sw_cloud, ssa_sw_cloud, g_sw_cloud)
+         !! call cloud_optics_mono(nlev, istartcol, iendcol, &
+          !!     &  config, thermodynamics, cloud, &
+           !!    &  od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
+           !!    &  od_sw_cloud, ssa_sw_cloud, g_sw_cloud)
+       !! elseif (config%use_general_cloud_optics) then
+       !!   call general_cloud_optics(nlev, istartcol, iendcol, &
+       !!        &  config, thermodynamics, cloud, & 
+       !!        &  od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
+        !!       &  od_sw_cloud, ssa_sw_cloud, g_sw_cloud)
         else
           call cloud_optics(nlev, istartcol, iendcol, &
                &  config, thermodynamics, cloud, & 
@@ -366,7 +366,6 @@ contains
                &  od_sw_cloud, ssa_sw_cloud, g_sw_cloud)
         end if
       end if ! do_clouds
-
       if (config%use_aerosols) then
         if (config%i_gas_model == IGasModelMonochromatic) then
 !          call add_aerosol_optics_mono(nlev,istartcol,iendcol, &
@@ -378,10 +377,10 @@ contains
                &  od_lw, ssa_lw, g_lw, od_sw, ssa_sw, g_sw)
         end if
       else
-        g_sw(:,:,istartcol:iendcol) = 0.0_jprb
+        g_sw(istartcol:iendcol,:,:) = 0.0_jprb
         if (config%do_lw_aerosol_scattering) then
-          ssa_lw(:,:,istartcol:iendcol) = 0.0_jprb
-          g_lw(:,:,istartcol:iendcol)   = 0.0_jprb
+          ssa_lw(istartcol:iendcol,:,:) = 0.0_jprb
+          g_lw(istartcol:iendcol,:,:)   = 0.0_jprb
         end if
       end if
 
@@ -394,14 +393,14 @@ contains
           write(rad_prop_file_name,'(a,a,i4.4,a,i4.4,a)') &
                &  rad_prop_base_file_name, '_', istartcol, '-',iendcol,'.nc'
         end if
-        call save_radiative_properties(trim(rad_prop_file_name), &
-             &  nlev, istartcol, iendcol, &
-             &  config, single_level, thermodynamics, cloud, &
-             &  planck_hl, lw_emission, lw_albedo, &
-             &  sw_albedo_direct, sw_albedo_diffuse, incoming_sw, &
-             &  od_lw, ssa_lw, g_lw, od_sw, ssa_sw, g_sw, &
-             &  od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
-             &  od_sw_cloud, ssa_sw_cloud, g_sw_cloud)
+      !!  call save_radiative_properties(trim(rad_prop_file_name), &
+        !!     &  nlev, istartcol, iendcol, &
+          !!   &  config, single_level, thermodynamics, cloud, &
+            !! &  planck_hl, lw_emission, lw_albedo, &
+        !!     &  sw_albedo_direct, sw_albedo_diffuse, incoming_sw, &
+        !!     &  od_lw, ssa_lw, g_lw, od_sw, ssa_sw, g_sw, &
+        !!     &  od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
+        !!     &  od_sw_cloud, ssa_sw_cloud, g_sw_cloud)
       end if
 
       if (config%do_lw) then
@@ -411,34 +410,37 @@ contains
 
         if (config%i_solver_lw == ISolverMcICA) then
           ! Compute fluxes using the McICA longwave solver
+         ! g_lw = 0.0_jprb
+         ! ssa_lw = 0.0_jprb
           call solver_mcica_lw(nlev,istartcol,iendcol, &
                &  config, single_level, cloud, & 
                &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, &
                &  g_lw_cloud, planck_hl, lw_emission, lw_albedo, flux)
-        else if (config%i_solver_lw == ISolverSPARTACUS) then
-          ! Compute fluxes using the SPARTACUS longwave solver
-          call solver_spartacus_lw(nlev,istartcol,iendcol, &
-               &  config, thermodynamics, cloud, & 
-               &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
-               &  planck_hl, lw_emission, lw_albedo, flux)
-        else if (config%i_solver_lw == ISolverTripleclouds) then
-          ! Compute fluxes using the Tripleclouds longwave solver
-          call solver_tripleclouds_lw(nlev,istartcol,iendcol, &
-               &  config, cloud, & 
-               &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
-               &  planck_hl, lw_emission, lw_albedo, flux)
-        elseif (config%i_solver_lw == ISolverHomogeneous) then
-          ! Compute fluxes using the homogeneous solver
-          call solver_homogeneous_lw(nlev,istartcol,iendcol, &
-               &  config, cloud, & 
-               &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, &
-               &  g_lw_cloud, planck_hl, lw_emission, lw_albedo, flux)
-        else
-          ! Compute fluxes using the cloudless solver
-          call solver_cloudless_lw(nlev,istartcol,iendcol, &
-               &  config, od_lw, ssa_lw, g_lw, &
-               &  planck_hl, lw_emission, lw_albedo, flux)
         end if
+        !!else if (config%i_solver_lw == ISolverSPARTACUS) then
+          ! Compute fluxes using the SPARTACUS longwave solver
+         !! call solver_spartacus_lw(nlev,istartcol,iendcol, &
+           !!    &  config, thermodynamics, cloud, & 
+            !!   &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
+           !!    &  planck_hl, lw_emission, lw_albedo, flux)
+       !! else if (config%i_solver_lw == ISolverTripleclouds) then
+          ! Compute fluxes using the Tripleclouds longwave solver
+         !! call solver_tripleclouds_lw(nlev,istartcol,iendcol, &
+           !!    &  config, cloud, & 
+           !!    &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
+           !!    &  planck_hl, lw_emission, lw_albedo, flux)
+       !! elseif (config%i_solver_lw == ISolverHomogeneous) then
+          ! Compute fluxes using the homogeneous solver
+         !! call solver_homogeneous_lw(nlev,istartcol,iendcol, &
+           !!    &  config, cloud, & 
+           !!    &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, &
+            !!   &  g_lw_cloud, planck_hl, lw_emission, lw_albedo, flux)
+       !! else
+          ! Compute fluxes using the cloudless solver
+         !! call solver_cloudless_lw(nlev,istartcol,iendcol, &
+           !!    &  config, od_lw, ssa_lw, g_lw, &
+           !!    &  planck_hl, lw_emission, lw_albedo, flux)
+       !! end if
       end if
 
       if (config%do_sw) then
@@ -453,33 +455,33 @@ contains
                &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
                &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
                &  incoming_sw, flux)
-        else if (config%i_solver_sw == ISolverSPARTACUS) then
+       !! else if (config%i_solver_sw == ISolverSPARTACUS) then
           ! Compute fluxes using the SPARTACUS shortwave solver
-          call solver_spartacus_sw(nlev,istartcol,iendcol, &
-               &  config, single_level, thermodynamics, cloud, & 
-               &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
-               &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
-               &  incoming_sw, flux)
-        else if (config%i_solver_sw == ISolverTripleclouds) then
+        !!  call solver_spartacus_sw(nlev,istartcol,iendcol, &
+         !!      &  config, single_level, thermodynamics, cloud, & 
+         !!      &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
+         !!      &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
+         !!      &  incoming_sw, flux)
+       !! else if (config%i_solver_sw == ISolverTripleclouds) then
           ! Compute fluxes using the Tripleclouds shortwave solver
-          call solver_tripleclouds_sw(nlev,istartcol,iendcol, &
-               &  config, single_level, cloud, & 
-               &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
-               &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
-               &  incoming_sw, flux)
-        elseif (config%i_solver_sw == ISolverHomogeneous) then
+         !! call solver_tripleclouds_sw(nlev,istartcol,iendcol, &
+         !!      &  config, single_level, cloud, & 
+         !!      &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
+         !!      &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
+         !!      &  incoming_sw, flux)
+       !! elseif (config%i_solver_sw == ISolverHomogeneous) then
           ! Compute fluxes using the homogeneous solver
-          call solver_homogeneous_sw(nlev,istartcol,iendcol, &
-               &  config, single_level, cloud, & 
-               &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
-               &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
-               &  incoming_sw, flux)
-        else
+         !! call solver_homogeneous_sw(nlev,istartcol,iendcol, &
+         !!      &  config, single_level, cloud, & 
+         !!      &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
+         !!      &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
+         !!      &  incoming_sw, flux)
+       !! else
           ! Compute fluxes using the cloudless solver
-          call solver_cloudless_sw(nlev,istartcol,iendcol, &
-               &  config, single_level, od_sw, ssa_sw, g_sw, &
-               &  sw_albedo_direct, sw_albedo_diffuse, &
-               &  incoming_sw, flux)
+       !1   call solver_cloudless_sw(nlev,istartcol,iendcol, &
+       !!        &  config, single_level, od_sw, ssa_sw, g_sw, &
+       !!        &  sw_albedo_direct, sw_albedo_diffuse, &
+       !!        &  incoming_sw, flux)
         end if
       end if
 

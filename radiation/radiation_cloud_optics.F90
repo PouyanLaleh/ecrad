@@ -40,6 +40,7 @@ contains
          &                       IIceModelBaran2016, IIceModelBaran2017, &
          &                       IIceModelYi, &
          &                       ILiquidModelSOCRATES, ILiquidModelSlingo
+    use radiation_cloud_optics_data, only  : cloud_optics_type
     use radiation_ice_optics_fu, only    : NIceOpticsCoeffsFuSW, &
          &                                 NIceOpticsCoeffsFuLW
     use radiation_ice_optics_baran, only : NIceOpticsCoeffsBaran, &
@@ -213,6 +214,7 @@ contains
     use radiation_thermodynamics, only    : thermodynamics_type
     use radiation_cloud, only             : cloud_type
     use radiation_constants, only         : AccelDueToGravity
+    use radiation_cloud_optics_data, only : cloud_optics_type
     use radiation_ice_optics_fu, only     : calc_ice_optics_fu_sw, &
          &                                  calc_ice_optics_fu_lw
     use radiation_ice_optics_baran, only  : calc_ice_optics_baran, &
@@ -234,14 +236,14 @@ contains
     ! clouds in each longwave band, where the latter two
     ! variables are only defined if cloud longwave scattering is
     ! enabled (otherwise both are treated as zero).
-    real(jprb), dimension(config%n_bands_lw,nlev,istartcol:iendcol), intent(out) :: &
+    real(jprb), dimension(istartcol:iendcol,config%n_bands_lw,nlev), intent(out) :: &
          &   od_lw_cloud
-    real(jprb), dimension(config%n_bands_lw_if_scattering,nlev,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_bands_lw_if_scattering,nlev), &
          &   intent(out) :: ssa_lw_cloud, g_lw_cloud
 
     ! Layer optical depth, single scattering albedo and g factor of
     ! clouds in each shortwave band
-    real(jprb), dimension(config%n_bands_sw,nlev,istartcol:iendcol), intent(out) :: &
+    real(jprb), dimension(istartcol:iendcol,config%n_bands_sw,nlev), intent(out) :: &
          &   od_sw_cloud, ssa_sw_cloud, g_sw_cloud
 
     ! Longwave and shortwave optical depth, scattering optical depth
@@ -343,8 +345,6 @@ contains
               if (.not. config%do_sw_delta_scaling_with_gases) then
                 call delta_eddington_scat_od(od_sw_liq, scat_od_sw_liq, g_sw_liq)
               end if
-              ! Originally delta-Eddington has been off in ecRad for
-              ! liquid clouds in the longwave, but it should be on
               !call delta_eddington_scat_od(od_lw_liq, scat_od_lw_liq, g_lw_liq)
 
             else
@@ -459,15 +459,15 @@ contains
   ! Added for DWD (2020)
   !NEC$ shortloop
               do jb = 1, config%n_bands_lw
-                od_lw_cloud(jb,jlev,jcol) = od_lw_liq(jb) + od_lw_ice(jb)
+                od_lw_cloud(jcol,jb,jlev) = od_lw_liq(jb) + od_lw_ice(jb)
                 if (scat_od_lw_liq(jb)+scat_od_lw_ice(jb) > 0.0_jprb) then
-                  g_lw_cloud(jb,jlev,jcol) = (g_lw_liq(jb) * scat_od_lw_liq(jb) &
+                  g_lw_cloud(jcol,jb,jlev) = (g_lw_liq(jb) * scat_od_lw_liq(jb) &
                     &  + g_lw_ice(jb) * scat_od_lw_ice(jb)) &
                     &  / (scat_od_lw_liq(jb)+scat_od_lw_ice(jb))
                 else
-                  g_lw_cloud(jb,jlev,jcol) = 0.0_jprb
+                  g_lw_cloud(jcol,jb,jlev) = 0.0_jprb
                 end if
-                ssa_lw_cloud(jb,jlev,jcol) = (scat_od_lw_liq(jb) + scat_od_lw_ice(jb)) &
+                ssa_lw_cloud(jcol,jb,jlev) = (scat_od_lw_liq(jb) + scat_od_lw_ice(jb)) &
                   &                    / (od_lw_liq(jb) + od_lw_ice(jb))
               end do
             else
@@ -477,18 +477,18 @@ contains
   ! Added for DWD (2020)
   !NEC$ shortloop
               do jb = 1, config%n_bands_lw
-                od_lw_cloud(jb,jlev,jcol) = od_lw_liq(jb) - scat_od_lw_liq(jb) &
+                od_lw_cloud(jcol,jb,jlev) = od_lw_liq(jb) - scat_od_lw_liq(jb) &
                       &                   + od_lw_ice(jb) - scat_od_lw_ice(jb)
               end do
             end if
   ! Added for DWD (2020)
   !NEC$ shortloop
             do jb = 1, config%n_bands_sw
-              od_sw_cloud(jb,jlev,jcol) = od_sw_liq(jb) + od_sw_ice(jb)
-              g_sw_cloud(jb,jlev,jcol) = (g_sw_liq(jb) * scat_od_sw_liq(jb) &
+              od_sw_cloud(jcol,jb,jlev) = od_sw_liq(jb) + od_sw_ice(jb)
+              g_sw_cloud(jcol,jb,jlev) = (g_sw_liq(jb) * scat_od_sw_liq(jb) &
                 &  + g_sw_ice(jb) * scat_od_sw_ice(jb)) &
                 &  / (scat_od_sw_liq(jb) + scat_od_sw_ice(jb))
-              ssa_sw_cloud(jb,jlev,jcol) &
+              ssa_sw_cloud(jcol,jb,jlev) &
                 &  = (scat_od_sw_liq(jb) + scat_od_sw_ice(jb)) / (od_sw_liq(jb) + od_sw_ice(jb))
             end do
           end if ! Cloud present

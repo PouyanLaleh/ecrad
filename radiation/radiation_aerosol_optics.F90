@@ -503,24 +503,24 @@ contains
     ! for each g point. Note that longwave ssa and asymmetry and
     ! shortwave asymmetry are all zero for gases, so are not yet
     ! defined on input and are therefore intent(out).
-    real(jprb), dimension(config%n_g_lw,nlev,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw,nlev), &
          &   intent(inout) :: od_lw
-    real(jprb), dimension(config%n_g_lw_if_scattering,nlev,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw_if_scattering,nlev), &
          &   intent(out)   :: ssa_lw, g_lw
-    real(jprb), dimension(config%n_g_sw,nlev,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_sw,nlev), &
          &   intent(inout) :: od_sw, ssa_sw
-    real(jprb), dimension(config%n_g_sw,nlev,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_sw,nlev), &
          &   intent(out)   :: g_sw
 
     ! Extinction optical depth, scattering optical depth and
     ! asymmetry-times-scattering-optical-depth for all the aerosols in
     ! a column for each spectral band of the shortwave and longwave
     ! spectrum
-    real(jprb), dimension(config%n_bands_sw,nlev) &
+    real(jprb), dimension(istartcol:iendcol,config%n_bands_sw,nlev) &
          &  :: od_sw_aerosol, scat_sw_aerosol, scat_g_sw_aerosol
-    real(jprb), dimension(config%n_bands_lw,nlev) &
+    real(jprb), dimension(istartcol:iendcol,config%n_bands_lw,nlev) &
          &  :: od_lw_aerosol
-    real(jprb), dimension(config%n_bands_lw_if_scattering,nlev) &
+    real(jprb), dimension(istartcol:iendcol,config%n_bands_lw_if_scattering,nlev) &
          &  :: scat_lw_aerosol, scat_g_lw_aerosol
 
     real(jprb) :: local_od_sw, local_od_lw
@@ -531,14 +531,14 @@ contains
 
     ! Factor (kg m-2) to convert mixing ratio (kg kg-1) to mass in
     ! path (kg m-2)
-    real(jprb) :: factor(nlev)
+    real(jprb) :: factor(istartcol:iendcol,nlev)
 
     ! Temporary extinction and scattering optical depths of aerosol
     ! plus gas
     real(jprb) :: local_od, local_scat
 
     ! Aerosol mixing ratio as a scalar
-    real(jprb) :: mixing_ratio
+    real(jprb) :: mixing_ratio(istartcol:iendcol)
 
     ! Loop indices for column, level, g point, band and aerosol type
     integer :: jcol, jlev, jg, jtype, jband
@@ -547,7 +547,7 @@ contains
     integer :: istartlev, iendlev
 
     ! Indices to spectral band and relative humidity look-up table
-    integer :: iband, irh, irhs(nlev)
+    integer :: iband, irh(istartcol:iendcol), irhs(istartcol:iendcol,nlev)
 
     ! Short cut for ao%itype(jtype)
     integer :: itype
@@ -558,7 +558,7 @@ contains
     real(jphook) :: hook_handle
 
     if (lhook) call dr_hook('radiation_aerosol_optics:add_aerosol_optics',0,hook_handle)
-
+   
     if (aerosol%is_direct) then
       ! Aerosol optical properties have been provided in each band
       ! directly by the user
@@ -592,16 +592,16 @@ contains
       end if
 
       ! Set variables to zero that may not have been previously
-      g_sw(:,:,istartcol:iendcol) = 0.0_jprb
+      g_sw(istartcol:iendcol,:,:) = 0.0_jprb
       if (config%do_lw_aerosol_scattering) then
-        ssa_lw(:,:,istartcol:iendcol) = 0.0_jprb
-        g_lw(:,:,istartcol:iendcol)   = 0.0_jprb
+        ssa_lw(istartcol:iendcol,:,:) = 0.0_jprb
+        g_lw(istartcol:iendcol,:,:)   = 0.0_jprb
       end if
 
       call gas%get(IH2O, IMassMixingRatio, h2o_mmr, istartcol=istartcol)
 
       ! Loop over column
-      do jcol = istartcol,iendcol
+      !!do jcol = istartcol,iendcol
 
         ! Reset temporary arrays
         od_sw_aerosol     = 0.0_jprb
@@ -612,17 +612,19 @@ contains
         scat_g_lw_aerosol = 0.0_jprb
 
         do jlev = istartlev,iendlev
+          do jcol = istartcol,iendcol
           ! Compute relative humidity with respect to liquid
           ! saturation and the index to the relative-humidity index of
           ! hydrophilic-aerosol data
           rh  = h2o_mmr(jcol,jlev) / thermodynamics%h2o_sat_liq(jcol,jlev)
-          irhs(jlev) = ao%calc_rh_index(rh)
+          irhs(jcol,jlev) = ao%calc_rh_index(rh)
 
-          factor(jlev) = ( thermodynamics%pressure_hl(jcol,jlev+1) &
+          factor(jcol,jlev) = ( thermodynamics%pressure_hl(jcol,jlev+1) &
                &    -thermodynamics%pressure_hl(jcol,jlev  )  ) &
                &   * OneOverAccelDueToGravity
+          end do
         end do
-
+     !! do jcol = istartcol,iendcol
         do jtype = 1,config%n_aerosol_types
           itype = ao%itype(jtype)
 
@@ -632,78 +634,95 @@ contains
           ! that the following expressions are array-wise, the
           ! dimension being spectral band.
           if (ao%iclass(jtype) == IAerosolClassHydrophobic) then
+                 !!! print *, " -------- 1 ---------"
             do jlev = istartlev,iendlev
-              mixing_ratio = aerosol%mixing_ratio(jcol,jlev,jtype)
+              do jcol = istartcol,iendcol
+              mixing_ratio(jcol) = aerosol%mixing_ratio(jcol,jlev,jtype)
+              end do
               do jband = 1,config%n_bands_sw
-                local_od_sw = factor(jlev) * mixing_ratio &
+                do jcol = istartcol,iendcol
+                local_od_sw = factor(jcol,jlev) * mixing_ratio(jcol) &
                      &  * ao%mass_ext_sw_phobic(jband,itype)
-                od_sw_aerosol(jband,jlev) = od_sw_aerosol(jband,jlev) + local_od_sw
-                scat_sw_aerosol(jband,jlev) = scat_sw_aerosol(jband,jlev) &
+                od_sw_aerosol(jcol,jband,jlev) = od_sw_aerosol(jcol,jband,jlev) + local_od_sw
+                scat_sw_aerosol(jcol,jband,jlev) = scat_sw_aerosol(jcol,jband,jlev) &
                      &  + local_od_sw * ao%ssa_sw_phobic(jband,itype)
-                scat_g_sw_aerosol(jband,jlev) = scat_g_sw_aerosol(jband,jlev) &
+                scat_g_sw_aerosol(jcol,jband,jlev) = scat_g_sw_aerosol(jcol,jband,jlev) &
                      &  + local_od_sw * ao%ssa_sw_phobic(jband,itype) &
                      &  * ao%g_sw_phobic(jband,itype)
+               end do
               end do
               if (config%do_lw_aerosol_scattering) then
-                do jband = 1,config%n_bands_lw
-                  local_od_lw = factor(jlev) * mixing_ratio &
-                       &  * ao%mass_ext_lw_phobic(jband,itype)
-                  od_lw_aerosol(jband,jlev) = od_lw_aerosol(jband,jlev) + local_od_lw
-                  scat_lw_aerosol(jband,jlev) = scat_lw_aerosol(jband,jlev) &
-                       &  + local_od_lw * ao%ssa_lw_phobic(jband,itype)
-                  scat_g_lw_aerosol(jband,jlev) = scat_g_lw_aerosol(jband,jlev) &
-                       &  + local_od_lw * ao%ssa_lw_phobic(jband,itype) &
-                       &  * ao%g_lw_phobic(jband,itype)
-                end do
+                      print *, "---------- 2 -----------"
+               !!!! do jband = 1,config%n_bands_lw
+               !!!!   local_od_lw = factor(jlev) * mixing_ratio &
+                !!!!       &  * ao%mass_ext_lw_phobic(jband,itype)
+               !!!!   od_lw_aerosol(jband,jlev) = od_lw_aerosol(jband,jlev) + local_od_lw
+               !!!   scat_lw_aerosol(jband,jlev) = scat_lw_aerosol(jband,jlev) &
+               !!!        &  + local_od_lw * ao%ssa_lw_phobic(jband,itype)
+              !!!    scat_g_lw_aerosol(jband,jlev) = scat_g_lw_aerosol(jband,jlev) &
+              !!!!         &  + local_od_lw * ao%ssa_lw_phobic(jband,itype) &
+              !!!!         &  * ao%g_lw_phobic(jband,itype)
+             !!!   end do
               else
+                 !!     print *, "----------------2 else---"
                 ! If aerosol longwave scattering is not included then we
                 ! weight the optical depth by the single scattering
                 ! co-albedo
                 do jband = 1,config%n_bands_lw
-                  od_lw_aerosol(jband,jlev) = od_lw_aerosol(jband,jlev) &
-                       &  + factor(jlev) * mixing_ratio &
+                  do jcol = istartcol,iendcol
+                  od_lw_aerosol(jcol,jband,jlev) = od_lw_aerosol(jcol,jband,jlev) &
+                       &  + factor(jcol,jlev) * mixing_ratio(jcol) &
                        &  * ao%mass_ext_lw_phobic(jband,itype) &
                        &  * (1.0_jprb - ao%ssa_lw_phobic(jband,itype))
+                  end do
                 end do
               end if
             end do
-
           else if (ao%iclass(jtype) == IAerosolClassHydrophilic) then
+            !! print *, " -----------1 elseif --------------"
             ! Hydrophilic aerosols require the look-up tables to
             ! be indexed with irh
             do jlev = istartlev,iendlev
-              mixing_ratio = aerosol%mixing_ratio(jcol,jlev,jtype)
-              irh = irhs(jlev)
+              do jcol = istartcol,iendcol
+              mixing_ratio(jcol) = aerosol%mixing_ratio(jcol,jlev,jtype)
+              irh(jcol) = irhs(jcol,jlev)
+              end do
               do jband = 1,config%n_bands_sw
-                local_od_sw = factor(jlev) * mixing_ratio &
-                     &  * ao%mass_ext_sw_philic(jband,irh,itype)
-                od_sw_aerosol(jband,jlev) = od_sw_aerosol(jband,jlev) + local_od_sw
-                scat_sw_aerosol(jband,jlev) = scat_sw_aerosol(jband,jlev) &
-                     &  + local_od_sw * ao%ssa_sw_philic(jband,irh,itype)
-                scat_g_sw_aerosol(jband,jlev) = scat_g_sw_aerosol(jband,jlev) &
-                     &  + local_od_sw * ao%ssa_sw_philic(jband,irh,itype) &
-                     &  * ao%g_sw_philic(jband,irh,itype)
+                do jcol = istartcol,iendcol
+                local_od_sw = factor(jcol,jlev) * mixing_ratio(jcol) &
+                     &  * ao%mass_ext_sw_philic(jband,irh(jcol),itype)
+                od_sw_aerosol(jcol,jband,jlev) = od_sw_aerosol(jcol,jband,jlev) + local_od_sw
+                scat_sw_aerosol(jcol,jband,jlev) = scat_sw_aerosol(jcol,jband,jlev) &
+                     &  + local_od_sw * ao%ssa_sw_philic(jband,irh(jcol),itype)
+                scat_g_sw_aerosol(jcol,jband,jlev) = scat_g_sw_aerosol(jcol,jband,jlev) &
+                     &  + local_od_sw * ao%ssa_sw_philic(jband,irh(jcol),itype) &
+                     &  * ao%g_sw_philic(jband,irh(jcol),itype)
+                end do
               end do
               if (config%do_lw_aerosol_scattering) then
-                do jband = 1,config%n_bands_lw
-                  local_od_lw = factor(jlev) * mixing_ratio &
-                       &  * ao%mass_ext_lw_philic(jband,irh,itype)
-                  od_lw_aerosol(jband,jlev) = od_lw_aerosol(jband,jlev) + local_od_lw
-                  scat_lw_aerosol(jband,jlev) = scat_lw_aerosol(jband,jlev) &
-                       &  + local_od_lw * ao%ssa_lw_philic(jband,irh,itype)
-                  scat_g_lw_aerosol(jband,jlev) = scat_g_lw_aerosol(jband,jlev) &
-                       &  + local_od_lw * ao%ssa_lw_philic(jband,irh,itype) &
-                       &  * ao%g_lw_philic(jband,irh,itype)
-                end do
+                      print *, " ----------3 ---------"
+            !!!    do jband = 1,config%n_bands_lw
+            !!!!      local_od_lw = factor(jlev) * mixing_ratio &
+             !!!          &  * ao%mass_ext_lw_philic(jband,irh,itype)
+            !!!      od_lw_aerosol(jband,jlev) = od_lw_aerosol(jband,jlev) + local_od_lw
+            !!!      scat_lw_aerosol(jband,jlev) = scat_lw_aerosol(jband,jlev) &
+            !!!           &  + local_od_lw * ao%ssa_lw_philic(jband,irh,itype)
+            !!!      scat_g_lw_aerosol(jband,jlev) = scat_g_lw_aerosol(jband,jlev) &
+            !!!           &  + local_od_lw * ao%ssa_lw_philic(jband,irh,itype) &
+            !!!           &  * ao%g_lw_philic(jband,irh,itype)
+            !!!    end do
               else
+                  !!! print *, "----------- 3 else ------"
                 ! If aerosol longwave scattering is not included then we
                 ! weight the optical depth by the single scattering
                 ! co-albedo
                 do jband = 1,config%n_bands_lw
-                  od_lw_aerosol(jband,jlev) = od_lw_aerosol(jband,jlev) &
-                       &  + factor(jlev) * mixing_ratio &
-                       &  * ao%mass_ext_lw_philic(jband,irh,itype) &
-                       &  * (1.0_jprb - ao%ssa_lw_philic(jband,irh,itype))
+                  do jcol = istartcol,iendcol
+                  od_lw_aerosol(jcol,jband,jlev) = od_lw_aerosol(jcol,jband,jlev) &
+                       &  + factor(jcol,jlev) * mixing_ratio(jcol) &
+                       &  * ao%mass_ext_lw_philic(jband,irh(jcol),itype) &
+                       &  * (1.0_jprb - ao%ssa_lw_philic(jband,irh(jcol),itype))
+                  end do
                 end do
               end if
             end do
@@ -715,48 +734,52 @@ contains
         end do ! Loop over aerosol type
 
         if (.not. config%do_sw_delta_scaling_with_gases) then
+          do jcol = istartcol,iendcol
+               !!! print *, " --------- 4---------"
           ! Delta-Eddington scaling on aerosol only.  Note that if
           ! do_sw_delta_scaling_with_gases==.true. then the delta
           ! scaling is done to the cloud-aerosol-gas mixture inside
           ! the solver
-          call delta_eddington_extensive_vec(config%n_bands_sw*nlev, od_sw_aerosol, &
-               &                             scat_sw_aerosol, scat_g_sw_aerosol)
+          call delta_eddington_extensive_vec(config%n_bands_sw*nlev, od_sw_aerosol(jcol,:,:), &
+               &                             scat_sw_aerosol(jcol,:,:), scat_g_sw_aerosol(jcol,:,:))
+          end do
         end if
-
         ! Combine aerosol shortwave scattering properties with gas
         ! properties (noting that any gas scattering will have an
         ! asymmetry factor of zero)
         if (config%do_cloud_aerosol_per_sw_g_point) then
-
+          print *, "-------- 5 -----------"
           ! We can assume the band and g-point indices are the same
-          do jlev = 1,nlev
-            do jg = 1,config%n_g_sw
-              local_scat = ssa_sw(jg,jlev,jcol)*od_sw(jg,jlev,jcol) + scat_sw_aerosol(jg,jlev)
-              od_sw(jg,jlev,jcol) = od_sw(jg,jlev,jcol) + od_sw_aerosol(jg,jlev)
-              g_sw(jg,jlev,jcol) = scat_g_sw_aerosol(jg,jlev) / max(local_scat, 1.0e-24_jprb)
-              ssa_sw(jg,jlev,jcol) = min(local_scat / max(od_sw(jg,jlev,jcol), 1.0e-24_jprb), 1.0_jprb)
-            end do
-          end do
+      !!!    do jlev = 1,nlev
+        !!!    do jg = 1,config%n_g_sw
+        !!!      local_scat = ssa_sw(jcol,jg,jlev)*od_sw(jcol,jg,jlev) + scat_sw_aerosol(jg,jlev)
+       !!!       od_sw(jcol,jg,jlev) = od_sw(jcol,jg,jlev) + od_sw_aerosol(jg,jlev)
+       !!!       g_sw(jcol,jg,jlev) = scat_g_sw_aerosol(jg,jlev) / max(local_scat, 1.0e-24_jprb)
+       !!!       ssa_sw(jcol,jg,jlev) = min(local_scat / max(od_sw(jcol,jg,jlev), 1.0e-24_jprb), 1.0_jprb)
+       !!!     end do
+       !!!   end do
 
         else
-
+        !!!  print *, " _________ 5 else -_________"
           do jlev = 1,nlev
             do jg = 1,config%n_g_sw
+              do jcol = istartcol, iendcol
               ! Need to map between bands and g-points
               iband = config%i_band_from_reordered_g_sw(jg)
-              local_od = od_sw(jg,jlev,jcol) + od_sw_aerosol(iband,jlev)
-              if (local_od > 0.0_jprb .and. od_sw_aerosol(iband,jlev) > 0.0_jprb) then
-                local_scat = ssa_sw(jg,jlev,jcol) * od_sw(jg,jlev,jcol) &
-                     &  + scat_sw_aerosol(iband,jlev)
+              local_od = od_sw(jcol,jg,jlev) + od_sw_aerosol(jcol,iband,jlev)
+              if (local_od > 0.0_jprb .and. od_sw_aerosol(jcol,iband,jlev) > 0.0_jprb) then
+                local_scat = ssa_sw(jcol,jg,jlev) * od_sw(jcol,jg,jlev) &
+                     &  + scat_sw_aerosol(jcol,iband,jlev)
                 ! Note that asymmetry_sw of gases is zero so the following
                 ! simply weights the aerosol asymmetry by the scattering
                 ! optical depth
                 if (local_scat > 0.0_jprb) then
-                  g_sw(jg,jlev,jcol) = scat_g_sw_aerosol(iband,jlev) / local_scat
+                  g_sw(jcol,jg,jlev) = scat_g_sw_aerosol(jcol,iband,jlev) / local_scat
                 end if
-                ssa_sw(jg,jlev,jcol) = local_scat / local_od
-                od_sw (jg,jlev,jcol) = local_od
+                ssa_sw(jcol,jg,jlev) = local_scat / local_od
+                od_sw (jcol,jg,jlev) = local_od
               end if
+            end do
             end do
           end do
 
@@ -766,48 +789,54 @@ contains
         ! properties, noting that in the longwave, gases do not
         ! scatter at all
         if (config%do_lw_aerosol_scattering) then
+         print *, "   -------   6  ---------"
+          !!!!call delta_eddington_extensive_vec(config%n_bands_lw*nlev, od_lw_aerosol, &
+          !!!!     &                             scat_lw_aerosol, scat_g_lw_aerosol)
 
-          call delta_eddington_extensive_vec(config%n_bands_lw*nlev, od_lw_aerosol, &
-               &                             scat_lw_aerosol, scat_g_lw_aerosol)
-
-          do jlev = istartlev,iendlev
-            do jg = 1,config%n_g_lw
-              iband = config%i_band_from_reordered_g_lw(jg)
-              local_od = od_lw(jg,jlev,jcol) + od_lw_aerosol(iband,jlev)
-              if (local_od > 0.0_jprb .and. od_lw_aerosol(iband,jlev) > 0.0_jprb) then
-                ! All scattering is due to aerosols, therefore the
-                ! asymmetry factor is equal to the value for aerosols
-                if (scat_lw_aerosol(iband,jlev) > 0.0_jprb) then
-                  g_lw(jg,jlev,jcol) = scat_g_lw_aerosol(iband,jlev) &
-                       &  / scat_lw_aerosol(iband,jlev)
-                end if
-                ssa_lw(jg,jlev,jcol) = scat_lw_aerosol(iband,jlev) / local_od
-                od_lw (jg,jlev,jcol) = local_od
-              end if
-            end do
-          end do
+        !!!!  do jlev = istartlev,iendlev
+         !!!!   do jg = 1,config%n_g_lw
+         !!!     iband = config%i_band_from_reordered_g_lw(jg)
+         !!!     local_od = od_lw(jcol,jg,jlev) + od_lw_aerosol(iband,jlev)
+        !!!!      if (local_od > 0.0_jprb .and. od_lw_aerosol(iband,jlev) > 0.0_jprb) then
+        !!!!        ! All scattering is due to aerosols, therefore the
+         !!!       ! asymmetry factor is equal to the value for aerosols
+         !!!       if (scat_lw_aerosol(iband,jlev) > 0.0_jprb) then
+         !!!         g_lw(jcol,jg,jlev) = scat_g_lw_aerosol(iband,jlev) &
+         !!!              &  / scat_lw_aerosol(iband,jlev)
+         !!!         print *, "------------->   ",g_lw
+          !!!      end if
+         !!!       print *, "------------->   ",ssa_lw
+         !!!       ssa_lw(jcol,jg,jlev) = scat_lw_aerosol(iband,jlev) / local_od
+         !!!       od_lw (jcol,jg,jlev) = local_od
+         !!!     end if
+         !!!   end do
+        !!!  end do
 
         else
-
+        !!!  print *, " -------- 6 else --------"
           if (config%do_cloud_aerosol_per_lw_g_point) then
             ! We can assume band and g-point indices are the same
             do jlev = istartlev,iendlev
               do jg = 1,config%n_g_lw
-                od_lw(jg,jlev,jcol) = od_lw(jg,jlev,jcol) + od_lw_aerosol(jg,jlev)
+                do jcol = istartcol,iendcol
+                od_lw(jcol,jg,jlev) = od_lw(jcol,jg,jlev) + od_lw_aerosol(jcol,jg,jlev)
+                end do
               end do
             end do
           else
             do jlev = istartlev,iendlev
               do jg = 1,config%n_g_lw
-                od_lw(jg,jlev,jcol) = od_lw(jg,jlev,jcol) &
-                     &  + od_lw_aerosol(config%i_band_from_reordered_g_lw(jg),jlev)
+                do jcol =istartcol,iendcol
+                od_lw(jcol,jg,jlev) = od_lw(jcol,jg,jlev) &
+                     &  + od_lw_aerosol(jcol,config%i_band_from_reordered_g_lw(jg),jlev)
+               end do
               end do
             end do
           end if
 
         end if
 
-      end do ! Loop over column
+    !!!  end do ! Loop over column
 
     end if
 

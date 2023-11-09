@@ -102,141 +102,141 @@ contains
     ng = config%n_g_sw
 
     ! Loop through columns
-    do jcol = istartcol,iendcol
+    !do jcol = istartcol,iendcol
       ! Only perform calculation if sun above the horizon
-      if (single_level%cos_sza(jcol) > 0.0_jprb) then
+    !  if (single_level%cos_sza(jcol) > 0.0_jprb) then
 
-        cos_sza = single_level%cos_sza(jcol)
+    !    cos_sza = single_level%cos_sza(jcol)
         
         ! The following is the same as the clear-sky part of
         ! solver_homogeneous_sw
-        if (.not. config%do_sw_delta_scaling_with_gases) then
-          ! Delta-Eddington scaling has already been performed to the
+    !    if (.not. config%do_sw_delta_scaling_with_gases) then
+    !      ! Delta-Eddington scaling has already been performed to the
           ! aerosol part of od, ssa and g
-          do jlev = 1,nlev
-            call calc_two_stream_gammas_sw(ng, cos_sza, &
-                 &  ssa(:,jlev,jcol), g(:,jlev,jcol), &
-                 &  gamma1, gamma2, gamma3)
-            call calc_reflectance_transmittance_sw(ng, &
-                 &  cos_sza, &
-                 &  od(:,jlev,jcol), ssa(:,jlev,jcol), &
-                 &  gamma1, gamma2, gamma3, &
-                 &  reflectance(:,jlev), transmittance(:,jlev), &
-                 &  ref_dir(:,jlev), trans_dir_diff(:,jlev), &
-                 &  trans_dir_dir(:,jlev) )
-          end do
-        else
+    !      do jlev = 1,nlev
+    !        call calc_two_stream_gammas_sw(ng, cos_sza, &
+    !             &  ssa(:,jlev,jcol), g(:,jlev,jcol), &
+    !             &  gamma1, gamma2, gamma3)
+    !        call calc_reflectance_transmittance_sw(ng, &
+    !             &  cos_sza, &
+    !             &  od(:,jlev,jcol), ssa(:,jlev,jcol), &
+    !             &  gamma1, gamma2, gamma3, &
+    !             &  reflectance(:,jlev), transmittance(:,jlev), &
+    !             &  ref_dir(:,jlev), trans_dir_diff(:,jlev), &
+    !             &  trans_dir_dir(:,jlev) )
+    !      end do
+    !    else
           ! Apply delta-Eddington scaling to the aerosol-gas mixture
-          do jlev = 1,nlev
-            od_total  =  od(:,jlev,jcol)
-            ssa_total = ssa(:,jlev,jcol)
-            g_total   =   g(:,jlev,jcol)
-            call delta_eddington(od_total, ssa_total, g_total)
-            call calc_two_stream_gammas_sw(ng, &
-                 &  cos_sza, ssa_total, g_total, &
-                 &  gamma1, gamma2, gamma3)
-            call calc_reflectance_transmittance_sw(ng, &
-                 &  cos_sza, od_total, ssa_total, &
-                 &  gamma1, gamma2, gamma3, &
-                 &  reflectance(:,jlev), transmittance(:,jlev), &
-                 &  ref_dir(:,jlev), trans_dir_diff(:,jlev), &
-                 &  trans_dir_dir(:,jlev) )
-          end do
-        end if
+    !      do jlev = 1,nlev
+    !        od_total  =  od(:,jlev,jcol)
+    !        ssa_total = ssa(:,jlev,jcol)
+    !        g_total   =   g(:,jlev,jcol)
+    !        call delta_eddington(od_total, ssa_total, g_total)
+    !        call calc_two_stream_gammas_sw(ng, &
+    !             &  cos_sza, ssa_total, g_total, &
+    !             &  gamma1, gamma2, gamma3)
+    !        call calc_reflectance_transmittance_sw(ng, &
+    !             &  cos_sza, od_total, ssa_total, &
+    !             &  gamma1, gamma2, gamma3, &
+    !            &  reflectance(:,jlev), transmittance(:,jlev), &
+    !             &  ref_dir(:,jlev), trans_dir_diff(:,jlev), &
+    !             &  trans_dir_dir(:,jlev) )
+    !      end do
+    !    end if
           
         ! Use adding method to compute fluxes
-        call adding_ica_sw(ng, nlev, incoming_sw(:,jcol), &
-             &  albedo_diffuse(:,jcol), albedo_direct(:,jcol), &
-             &  spread(cos_sza,1,ng), reflectance, transmittance, ref_dir, trans_dir_diff, &
-             &  trans_dir_dir, flux_up, flux_dn_diffuse, flux_dn_direct)
+    !    call adding_ica_sw(ng, nlev, incoming_sw(:,jcol), &
+    !         &  albedo_diffuse(:,jcol), albedo_direct(:,jcol), &
+    !         &  spread(cos_sza,1,ng), reflectance, transmittance, ref_dir, trans_dir_diff, &
+    !         &  trans_dir_dir, flux_up, flux_dn_diffuse, flux_dn_direct)
         
         ! Sum over g-points to compute and save clear-sky broadband
         ! fluxes
-        flux%sw_up(jcol,:) = sum(flux_up,1)
-        if (allocated(flux%sw_dn_direct)) then
-          flux%sw_dn_direct(jcol,:) = sum(flux_dn_direct,1)
-          flux%sw_dn(jcol,:) = sum(flux_dn_diffuse,1) &
-               &  + flux%sw_dn_direct(jcol,:)
-        else
-          flux%sw_dn(jcol,:) = sum(flux_dn_diffuse,1) + sum(flux_dn_direct,1)
-        end if
+    !    flux%sw_up(jcol,:) = sum(flux_up,1)
+    !    if (allocated(flux%sw_dn_direct)) then
+    !      flux%sw_dn_direct(jcol,:) = sum(flux_dn_direct,1)
+    !      flux%sw_dn(jcol,:) = sum(flux_dn_diffuse,1) &
+    !           &  + flux%sw_dn_direct(jcol,:)
+    !    else
+    !      flux%sw_dn(jcol,:) = sum(flux_dn_diffuse,1) + sum(flux_dn_direct,1)
+    !    end if
         ! Store spectral downwelling fluxes at surface
-        flux%sw_dn_diffuse_surf_g(:,jcol) = flux_dn_diffuse(:,nlev+1)
-        flux%sw_dn_direct_surf_g(:,jcol)  = flux_dn_direct(:,nlev+1)
+    !    flux%sw_dn_diffuse_surf_g(:,jcol) = flux_dn_diffuse(:,nlev+1)
+    !    flux%sw_dn_direct_surf_g(:,jcol)  = flux_dn_direct(:,nlev+1)
 
         ! Save the spectral fluxes if required
-        if (config%do_save_spectral_flux) then
-          call indexed_sum_profile(flux_up, config%i_spec_from_reordered_g_sw, &
-               &                   flux%sw_up_band(:,jcol,:))
-          call indexed_sum_profile(flux_dn_direct, config%i_spec_from_reordered_g_sw, &
-               &                   flux%sw_dn_band(:,jcol,:))
-          if (allocated(flux%sw_dn_direct_band)) then
-            flux%sw_dn_direct_band(:,jcol,:) &
-                 &  = flux%sw_dn_band(:,jcol,:)
-          end if
-          call add_indexed_sum_profile(flux_dn_diffuse, &
-               &                       config%i_spec_from_reordered_g_sw, &
-               &                       flux%sw_dn_band(:,jcol,:))
-        end if
+   !     if (config%do_save_spectral_flux) then
+   !       call indexed_sum_profile(flux_up, config%i_spec_from_reordered_g_sw, &
+   !            &                   flux%sw_up_band(:,jcol,:))
+   !       call indexed_sum_profile(flux_dn_direct, config%i_spec_from_reordered_g_sw, &
+   !            &                   flux%sw_dn_band(:,jcol,:))
+   !       if (allocated(flux%sw_dn_direct_band)) then
+   !         flux%sw_dn_direct_band(:,jcol,:) &
+   !              &  = flux%sw_dn_band(:,jcol,:)
+   !       end if
+   !       call add_indexed_sum_profile(flux_dn_diffuse, &
+   !            &                       config%i_spec_from_reordered_g_sw, &
+   !            &                       flux%sw_dn_band(:,jcol,:))
+   !     end if
 
-        if (config%do_clear) then
+   !     if (config%do_clear) then
           ! Clear-sky calculations are equal to all-sky for this
           ! solver: copy fluxes over
-          flux%sw_up_clear(jcol,:) = flux%sw_up(jcol,:)
-          flux%sw_dn_clear(jcol,:) = flux%sw_dn(jcol,:)
-          if (allocated(flux%sw_dn_direct_clear)) then
-            flux%sw_dn_direct_clear(jcol,:) = flux%sw_dn_direct(jcol,:)
-          end if
-          flux%sw_dn_diffuse_surf_clear_g(:,jcol) = flux%sw_dn_diffuse_surf_g(:,jcol)
-          flux%sw_dn_direct_surf_clear_g(:,jcol)  = flux%sw_dn_direct_surf_g(:,jcol)
+   !       flux%sw_up_clear(jcol,:) = flux%sw_up(jcol,:)
+   !       flux%sw_dn_clear(jcol,:) = flux%sw_dn(jcol,:)
+   !       if (allocated(flux%sw_dn_direct_clear)) then
+   !         flux%sw_dn_direct_clear(jcol,:) = flux%sw_dn_direct(jcol,:)
+   !       end if
+   !       flux%sw_dn_diffuse_surf_clear_g(:,jcol) = flux%sw_dn_diffuse_surf_g(:,jcol)
+   !       flux%sw_dn_direct_surf_clear_g(:,jcol)  = flux%sw_dn_direct_surf_g(:,jcol)
 
-          if (config%do_save_spectral_flux) then
-            flux%sw_up_clear_band(:,jcol,:) = flux%sw_up_band(:,jcol,:)
-            flux%sw_dn_clear_band(:,jcol,:) = flux%sw_dn_band(:,jcol,:)
-            if (allocated(flux%sw_dn_direct_clear_band)) then
-              flux%sw_dn_direct_clear_band(:,jcol,:) = flux%sw_dn_direct_band(:,jcol,:)
-            end if
-          end if
+   !       if (config%do_save_spectral_flux) then
+   !         flux%sw_up_clear_band(:,jcol,:) = flux%sw_up_band(:,jcol,:)
+   !         flux%sw_dn_clear_band(:,jcol,:) = flux%sw_dn_band(:,jcol,:)
+   !         if (allocated(flux%sw_dn_direct_clear_band)) then
+   !           flux%sw_dn_direct_clear_band(:,jcol,:) = flux%sw_dn_direct_band(:,jcol,:)
+   !         end if
+   !       end if
 
-        end if ! do_clear
+   !     end if ! do_clear
 
-      else
+   !   else
         ! Set fluxes to zero if sun is below the horizon
-        flux%sw_up(jcol,:) = 0.0_jprb
-        flux%sw_dn(jcol,:) = 0.0_jprb
-        if (allocated(flux%sw_dn_direct)) then
-          flux%sw_dn_direct(jcol,:) = 0.0_jprb
-        end if
-        flux%sw_dn_diffuse_surf_g(:,jcol) = 0.0_jprb
-        flux%sw_dn_direct_surf_g(:,jcol)  = 0.0_jprb
+   !     flux%sw_up(jcol,:) = 0.0_jprb
+   !     flux%sw_dn(jcol,:) = 0.0_jprb
+   !     if (allocated(flux%sw_dn_direct)) then
+   !       flux%sw_dn_direct(jcol,:) = 0.0_jprb
+   !     end if
+   !     flux%sw_dn_diffuse_surf_g(:,jcol) = 0.0_jprb
+   !     flux%sw_dn_direct_surf_g(:,jcol)  = 0.0_jprb
 
-        if (config%do_clear) then
-          flux%sw_up_clear(jcol,:) = 0.0_jprb
-          flux%sw_dn_clear(jcol,:) = 0.0_jprb
-          if (allocated(flux%sw_dn_direct_clear)) then
-            flux%sw_dn_direct_clear(jcol,:) = 0.0_jprb
-          end if
-          flux%sw_dn_diffuse_surf_clear_g(:,jcol) = 0.0_jprb
-          flux%sw_dn_direct_surf_clear_g(:,jcol)  = 0.0_jprb
-        end if
+   !     if (config%do_clear) then
+   !       flux%sw_up_clear(jcol,:) = 0.0_jprb
+   !       flux%sw_dn_clear(jcol,:) = 0.0_jprb
+   !       if (allocated(flux%sw_dn_direct_clear)) then
+   !         flux%sw_dn_direct_clear(jcol,:) = 0.0_jprb
+   !       end if
+   !       flux%sw_dn_diffuse_surf_clear_g(:,jcol) = 0.0_jprb
+   !       flux%sw_dn_direct_surf_clear_g(:,jcol)  = 0.0_jprb
+   !     end if
 
-        if (config%do_save_spectral_flux) then
-          flux%sw_dn_band(:,jcol,:) = 0.0_jprb
-          flux%sw_up_band(:,jcol,:) = 0.0_jprb
-          if (allocated(flux%sw_dn_direct_band)) then
-            flux%sw_dn_direct_band(:,jcol,:) = 0.0_jprb
-          end if
-          if (config%do_clear) then
-            flux%sw_dn_clear_band(:,jcol,:) = 0.0_jprb
-            flux%sw_up_clear_band(:,jcol,:) = 0.0_jprb
-            if (allocated(flux%sw_dn_direct_clear_band)) then
-              flux%sw_dn_direct_clear_band(:,jcol,:) = 0.0_jprb
-            end if
-          end if
-        end if
+   !     if (config%do_save_spectral_flux) then
+   !       flux%sw_dn_band(:,jcol,:) = 0.0_jprb
+   !       flux%sw_up_band(:,jcol,:) = 0.0_jprb
+   !       if (allocated(flux%sw_dn_direct_band)) then
+   !         flux%sw_dn_direct_band(:,jcol,:) = 0.0_jprb
+   !       end if
+   !       if (config%do_clear) then
+   !         flux%sw_dn_clear_band(:,jcol,:) = 0.0_jprb
+   !         flux%sw_up_clear_band(:,jcol,:) = 0.0_jprb
+   !         if (allocated(flux%sw_dn_direct_clear_band)) then
+   !          flux%sw_dn_direct_clear_band(:,jcol,:) = 0.0_jprb
+   !         end if
+   !       end if
+   !     end if
 
-      end if ! sun above horizon
-    end do
+    !  end if ! sun above horizon
+    !end do
 
     if (lhook) call dr_hook('radiation_cloudless_sw:solver_cloudless_sw',1,hook_handle)
 

@@ -790,12 +790,12 @@ contains
 
         ! Compute reflectance, transmittance and associated terms for
         ! clear skies, using the Meador-Weaver formulas
-        call calc_reflectance_transmittance_sw(ng, &
-             &  mu0, od_region(1:ng,1), ssa_region(1:ng,1), &
-             &  gamma1(1:ng,1), gamma2(1:ng,1), gamma3(1:ng,1), &
-             &  ref_clear(1:ng,jlev), trans_clear(1:ng,jlev), &
-             &  ref_dir_clear(1:ng,jlev), trans_dir_diff_clear(1:ng,jlev), &
-             &  trans_dir_dir_clear(1:ng,jlev) )
+        !!call calc_reflectance_transmittance_sw(ng, &
+        !!     &  mu0, od_region(1:ng,1), ssa_region(1:ng,1), &
+        !!     &  gamma1(1:ng,1), gamma2(1:ng,1), gamma3(1:ng,1), &
+        !!     &  ref_clear(1:ng,jlev), trans_clear(1:ng,jlev), &
+        !!     &  ref_dir_clear(1:ng,jlev), trans_dir_diff_clear(1:ng,jlev), &
+        !!     &  trans_dir_dir_clear(1:ng,jlev) )
 
         n_calls_meador_weaver = n_calls_meador_weaver + ng
 
@@ -819,18 +819,18 @@ contains
 
           ! Compute reflectance, transmittance and associated terms
           ! for each cloudy region, using the Meador-Weaver formulas
-          do jreg = 2, nregactive
-            call calc_reflectance_transmittance_sw(ng-ng3D, &
-                 &  mu0, &
-                 &  od_region(ng3D+1:ng,jreg), ssa_region(ng3D+1:ng,jreg), &
-                 &  gamma1(ng3D+1:ng,jreg), gamma2(ng3D+1:ng,jreg), &
-                 &  gamma3(ng3D+1:ng,jreg), &
-                 &  reflectance(ng3D+1:ng,jreg,jreg,jlev), &
-                 &  transmittance(ng3D+1:ng,jreg,jreg,jlev), &
-                 &  ref_dir(ng3D+1:ng,jreg,jreg,jlev), &
-                 &  trans_dir_diff(ng3D+1:ng,jreg,jreg,jlev), &
-                 &  trans_dir_dir(ng3D+1:ng,jreg,jreg,jlev) )
-          end do
+         !! do jreg = 2, nregactive
+         !!   call calc_reflectance_transmittance_sw(ng-ng3D, &
+         !!        &  mu0, &
+         !!        &  od_region(ng3D+1:ng,jreg), ssa_region(ng3D+1:ng,jreg), &
+         !!        &  gamma1(ng3D+1:ng,jreg), gamma2(ng3D+1:ng,jreg), &
+         !!        &  gamma3(ng3D+1:ng,jreg), &
+         !!        &  reflectance(ng3D+1:ng,jreg,jreg,jlev), &
+         !!        &  transmittance(ng3D+1:ng,jreg,jreg,jlev), &
+         !!        &  ref_dir(ng3D+1:ng,jreg,jreg,jlev), &
+         !!        &  trans_dir_diff(ng3D+1:ng,jreg,jreg,jlev), &
+         !!        &  trans_dir_dir(ng3D+1:ng,jreg,jreg,jlev) )
+         !! end do
           n_calls_meador_weaver &
                &  = n_calls_meador_weaver + (ng-ng3D)*(nregactive-1)
         end if

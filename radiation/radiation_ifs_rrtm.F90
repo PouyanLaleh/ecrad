@@ -214,29 +214,29 @@ contains
     type(gas_type),           intent(in) :: gas
 
     ! Longwave albedo of the surface
-    real(jprb), dimension(config%n_g_lw,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw), &
          &  intent(in), optional :: lw_albedo
 
     ! Gaseous layer optical depth in longwave and shortwave, and
     ! shortwave single scattering albedo (i.e. fraction of extinction
     ! due to Rayleigh scattering) at each g-point
-    real(jprb), dimension(config%n_g_lw,nlev,istartcol:iendcol), intent(out) :: &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw,nlev), intent(out) :: &
          &   od_lw
-    real(jprb), dimension(config%n_g_sw,nlev,istartcol:iendcol), intent(out) :: &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_sw,nlev), intent(out) :: &
          &   od_sw, ssa_sw
 
     ! The Planck function (emitted flux from a black body) at half
     ! levels at each longwave g-point
-    real(jprb), dimension(config%n_g_lw,nlev+1,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw,nlev+1), &
          &   intent(out), optional :: planck_hl
     ! Planck function for the surface (W m-2)
-    real(jprb), dimension(config%n_g_lw,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw), &
          &   intent(out), optional :: lw_emission
 
     ! The incoming shortwave flux into a plane perpendicular to the
     ! incoming radiation at top-of-atmosphere in each of the shortwave
     ! g-points
-    real(jprb), dimension(config%n_g_sw,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_sw), &
          &   intent(out), optional :: incoming_sw
 
     real(jprb) :: incoming_sw_scale(istartcol:iendcol)
@@ -391,6 +391,8 @@ contains
          &  ZCOLDRY, ZWBRODL,ZWKL, ZWX, &
          &  ZPAVEL , ZTAVEL , ZPZ , ZTZ, IREFLECT)  
 
+        !print *, "ZCOLDRY(11,12)---------->  ",ZCOLDRY(12,11)
+
     CALL RRTM_SETCOEF_140GP &
          &( istartcol, iendcol, nlev , ZCOLDRY  , ZWBRODL , ZWKL , &
          &  ZFAC00 , ZFAC01   , ZFAC10 , ZFAC11 , ZFORFAC,ZFORFRAC,INDFOR, JP, JT, JT1 , &
@@ -464,21 +466,23 @@ contains
             ! specifically original g points 54-56 which causes
             ! unphysical single-scattering albedo when combined with
             ! aerosol
-            od_lw(jgreorder,jlev,jcol) &
+            od_lw(jcol,jgreorder,jlev) &
                  &   = max(config%min_gas_od_lw, ZOD_LW(ig,nlev+1-jlev,jcol))
           end do
         end do
       end do
     else
       ! G points have not been reordered 
-      do jcol = istartcol,iendcol
-        do jlev = 1,nlev
+      do jlev = 1,nlev
+        do jcol = istartcol,iendcol
           ! Check for negative optical depth
-          od_lw(:,jlev,jcol) = max(config%min_gas_od_lw, ZOD_LW(:,nlev+1-jlev,jcol))
+          od_lw(jcol,:,jlev) = max(config%min_gas_od_lw, ZOD_LW(:,nlev+1-jlev,jcol))
         end do
       end do
     end if
-    
+          
+    !print *, "ZOD_LW---------->  ",ZOD_LW(12,11,6)
+     
     CALL SRTM_SETCOEF &
          & ( istartcol, iendcol, nlev,&
          & ZPAVEL  , ZTAVEL,&
@@ -538,13 +542,13 @@ contains
         do jlev = 1,nlev
           do jcol = istartcol,iendcol
             ! Check for negative optical depth
-            od_sw (jgreorder,nlev+1-jlev,jcol) &
+            od_sw (jcol,jgreorder,nlev+1-jlev) &
                  &  = max(config%min_gas_od_sw, ZOD_SW (jcol,jlev,ig))
-            ssa_sw(jgreorder,nlev+1-jlev,jcol) = ZSSA_SW(jcol,jlev,ig)
+            ssa_sw(jcol,jgreorder,nlev+1-jlev) = ZSSA_SW(jcol,jlev,ig)
            end do
         end do
         if (present(incoming_sw)) then
-          incoming_sw(jgreorder,:) &
+          incoming_sw(:,jgreorder) &
                &  = incoming_sw_scale(:) * ZINCSOL(:,ig)
         end if
       end do
@@ -554,13 +558,13 @@ contains
         do jlev = 1,nlev
           do jg = 1,config%n_g_sw
             ! Check for negative optical depth
-            od_sw (jg,nlev+1-jlev,jcol) = max(config%min_gas_od_sw, ZOD_SW(jcol,jlev,jg))
-            ssa_sw(jg,nlev+1-jlev,jcol) = ZSSA_SW(jcol,jlev,jg)
+            od_sw (jcol,jg,nlev+1-jlev) = max(config%min_gas_od_sw, ZOD_SW(jcol,jlev,jg))
+            ssa_sw(jcol,jg,nlev+1-jlev) = ZSSA_SW(jcol,jlev,jg)
           end do
         end do
         if (present(incoming_sw)) then
           do jg = 1,config%n_g_sw
-            incoming_sw(jg,jcol) = incoming_sw_scale(jcol) * ZINCSOL(jcol,jg)
+            incoming_sw(jcol,jg) = incoming_sw_scale(jcol) * ZINCSOL(jcol,jg)
           end do
         end if
       end do
@@ -596,7 +600,7 @@ contains
 
     ! The Planck function (emitted flux from a black body) at half
     ! levels at each longwave g-point
-    real(jprb), dimension(config%n_g_lw,nlev+1,istartcol:iendcol), intent(out) :: &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw,nlev+1), intent(out) :: &
          &   planck_hl
 
     ! Planck function values per band
@@ -664,24 +668,24 @@ contains
         ! regions of the spectrum that are optically thin for gases)
         ! and reorder in pressure since the the functions above treat
         ! pressure decreasing with increasing index.
-        if (jlev == 1) then
+       !! if (jlev == 1) then
           ! Top-of-atmosphere half level - note that PFRAC is on model
           ! levels not half levels
-          do jgreorder = 1,config%n_g_lw
-            iband = config%i_band_from_reordered_g_lw(jgreorder)
-            ig = config%i_g_from_reordered_g_lw(jgreorder)
-            planck_hl(jgreorder,1,:) = planck_store(:,iband) &
-                 &   * PFRAC(:,ig,nlev)
-          end do
-        else
-          do jgreorder = 1,config%n_g_lw
-            iband = config%i_band_from_reordered_g_lw(jgreorder)
-            ig = config%i_g_from_reordered_g_lw(jgreorder)
-            planck_hl(jgreorder,jlev,:) &
-                   &   = planck_store(:,iband) &
-                   &   * PFRAC(:,ig,nlev+2-jlev)
-          end do
-        end if
+      !!    do jgreorder = 1,config%n_g_lw
+      !!      iband = config%i_band_from_reordered_g_lw(jgreorder)
+      !!      ig = config%i_g_from_reordered_g_lw(jgreorder)
+      !!      planck_hl(jgreorder,1,:) = planck_store(:,iband) &
+      !!           &   * PFRAC(:,ig,nlev)
+      !!    end do
+      !1  else
+      !!    do jgreorder = 1,config%n_g_lw
+      !1      iband = config%i_band_from_reordered_g_lw(jgreorder)
+      !!      ig = config%i_g_from_reordered_g_lw(jgreorder)
+      !!      planck_hl(jgreorder,jlev,:) &
+      !!             &   = planck_store(:,iband) &
+      !!             &   * PFRAC(:,ig,nlev+2-jlev)
+      !!    end do
+      !!  end if
       else
         ! G points have not been reordered 
         if (jlev == 1) then
@@ -689,7 +693,7 @@ contains
           ! levels not half levels
           do jg = 1,config%n_g_lw
             iband = config%i_band_from_g_lw(jg)
-            planck_hl(jg,1,:) = planck_store(:,iband) * PFRAC(:,jg,nlev)
+            planck_hl(:,jg,1) = planck_store(:,iband) * PFRAC(:,jg,nlev)
           end do
         else
           do jg = 1,config%n_g_lw
@@ -697,7 +701,7 @@ contains
             planck_tmp(:,jg) = planck_store(:,iband) * PFRAC(:,jg,nlev+2-jlev)
           end do
           do jcol = istartcol,iendcol
-            planck_hl(:,jlev,jcol) = planck_tmp(jcol,:)
+            planck_hl(jcol,:,jlev) = planck_tmp(jcol,:)
           end do
         end if
       end if
@@ -730,7 +734,7 @@ contains
     real(jprb), intent(in) :: PFRAC(istartcol:iendcol,JPGPT_LW)
 
     ! Planck function of the surface (W m-2)
-    real(jprb), dimension(config%n_g_lw,istartcol:iendcol), &
+    real(jprb), dimension(istartcol:iendcol,config%n_g_lw), &
          &  intent(out) :: planck_surf
 
     ! Planck function values per band
@@ -793,13 +797,13 @@ contains
       do jgreorder = 1,config%n_g_lw
         iband = config%i_band_from_reordered_g_lw(jgreorder)
         ig = config%i_g_from_reordered_g_lw(jgreorder)
-        planck_surf(jgreorder,:) = planck_store(:,iband) * PFRAC(:,ig)
+        planck_surf(:,jgreorder) = planck_store(:,iband) * PFRAC(:,ig)
       end do
     else
       ! G points have not been reordered 
       do jg = 1,config%n_g_lw
         iband = config%i_band_from_g_lw(jg)
-        planck_surf(jg,:) = planck_store(:,iband) * PFRAC(:,jg)
+        planck_surf(:,jg) = planck_store(:,iband) * PFRAC(:,jg)
       end do
     end if
 

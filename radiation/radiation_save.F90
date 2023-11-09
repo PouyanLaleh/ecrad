@@ -80,7 +80,7 @@ contains
     else
       if (i_local_verbose >= 1) then
         write(nulout,'(a,a,a)') 'Warning: neither longwave nor shortwave computed so ', &
-             &                  trim(file_name),' not written'
+             &                  file_name,' not written'
       end if
       return
     end if
@@ -777,9 +777,7 @@ contains
 
     ! Emission (Planck*emissivity) and albedo (1-emissivity) at the
     ! surface at each longwave g-point
-    real(jprb), intent(in), dimension(config%n_g_lw, istartcol:iendcol) :: lw_emission, lw_albedo
-
-    ! Local variables
+    real(jprb), dimension(config%n_g_lw, istartcol:iendcol) :: lw_emission, lw_albedo
 
     integer :: n_col_local ! Number of columns from istartcol to iendcol
 

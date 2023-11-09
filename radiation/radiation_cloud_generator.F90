@@ -140,12 +140,15 @@ contains
       call cum_cloud_cover_exp_ran(nlev, frac, overlap_param, &
            &   cum_cloud_cover, pair_cloud_cover, use_beta_overlap)
     else if (i_overlap_scheme == IOverlapMaximumRandom) then
+     
       call cum_cloud_cover_max_ran(nlev, frac, &
            &   cum_cloud_cover, pair_cloud_cover)
     else if (i_overlap_scheme == IOverlapExponential) then
+      
       call cum_cloud_cover_exp_exp(nlev, frac, overlap_param, &
            &   cum_cloud_cover, pair_cloud_cover, use_beta_overlap)
     else
+      
       write(nulerr,'(a)') '*** Error: cloud overlap scheme not recognised'
       call radiation_abort()
     end if
